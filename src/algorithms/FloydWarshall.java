@@ -1,5 +1,6 @@
 package algorithms;
 
+import common.Input;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -9,12 +10,15 @@ import java.util.Arrays;
 
 public class FloydWarshall {
 
-    public static Output floydWarshall(Graph<Integer, DefaultWeightedEdge> graph) {
+    public static Output floydWarshall(Input input) {
+
+        // Set source and target vertices index
+        int target = input.getTarget();
+        int src = input.getSrc();
+        Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
+
         // Set number of vertices
         int V = graph.vertexSet().size();
-        // Set source and target vertices index
-        int target = V - 1;
-        int src = 0;
 
         // Distance matrix
         int[][] dist = new int[V][V]; // Shortest known distance from i to j

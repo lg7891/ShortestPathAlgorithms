@@ -1,5 +1,6 @@
 package algorithms;
 
+import common.Input;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -9,12 +10,15 @@ import java.util.*;
 
 public class Johnson {
 
-    public static Output johnson(Graph<Integer, DefaultWeightedEdge> graph) {
+    public static Output johnson(Input input) {
+
+        // Set source and target vertices index
+        int target = input.getTarget();
+        int src = input.getSrc();
+        Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
+
         // Set number of vertices
         int V = graph.vertexSet().size();
-        // Set source and target vertices index
-        int target = V - 1;
-        int src = 0;
 
         // Step 1: Build edge list for Bellman-Ford
         List<int[]> edges = new ArrayList<>();
@@ -58,7 +62,7 @@ public class Johnson {
         }
 
         // Step 4: Run Dijkstra on reweighted graph
-        Output reweightedOutput = DijkstraBinaryHeap.dijkstraBinaryHeap(reweightedGraph);
+        Output reweightedOutput = DijkstraBinaryHeap.dijkstraBinaryHeap(new Input(src, target, reweightedGraph));
 
         // Step 5: Adjust final path cost to original weights
         int correctedCost = reweightedOutput.getTotalPathPrice() + h[target] - h[src];

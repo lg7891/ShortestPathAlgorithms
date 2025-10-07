@@ -1,5 +1,6 @@
 package algorithms;
 
+import common.Input;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -9,12 +10,15 @@ import java.util.*;
 
 public class AStar {
 
-    public static Output aStar(Graph<Integer, DefaultWeightedEdge> graph) {
+    public static Output aStar(Input input) {
+
+        // Set source and target vertices index
+        int target = input.getTarget();
+        int src = input.getSrc();
+        Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
+
         // Set number of vertices
         int V = graph.vertexSet().size();
-        // Set source and target vertices index
-        int target = V - 1;
-        int src = 0;
 
         // Initialize distance array; Fill every with MAX_VALUE except for 1st
         int[] dist = new int[V];
