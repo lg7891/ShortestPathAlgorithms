@@ -77,6 +77,11 @@ public class FloydWarshall {
 
         int totalPathPrice = dist[src][target];
 
+        // Check if no path is found, if true return -1
+        if (totalPathPrice == Integer.MAX_VALUE) {
+          return new Output(-1, new ArrayList<>());
+        }
+
         return new Output(totalPathPrice, shortestPath);
     }
 }

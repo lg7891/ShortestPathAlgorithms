@@ -63,6 +63,11 @@ public class DijkstraFibonacciHeap {
             }
         }
 
+        // Check if no path is found, if true return -1
+        if (dist[target] == Integer.MAX_VALUE) {
+          return new Output(-1, new ArrayList<>());
+        }
+
         // Reconstruct shortest path
         ArrayList<Integer> shortestPath = new ArrayList<>();
         for (int at = target; at != -1; at = prev[at]) {

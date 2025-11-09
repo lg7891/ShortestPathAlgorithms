@@ -2,8 +2,8 @@ import algorithms.*;
 import common.GraphHelper;
 import common.Input;
 import common.Output;
+import common.OutputVerifier;
 import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
 import java.time.Duration;
@@ -50,13 +50,6 @@ public class Main {
         finish = Instant.now();
         long floydWarshallExecutionTime = Duration.between(start, finish).toMillis();
 
-//         Run A*
-//        aStar.aStar(graph);
-//        start = Instant.now();
-//        Output astarOutput = aStar.aStar(graph);
-//        finish = Instant.now();
-//        long aStarExecutionTime = Duration.between(start, finish).toMillis();
-
         // Run Dijkstra FH
         dijkstraFH.dijkstraFibonacciHeap(input);
         start = Instant.now();
@@ -75,8 +68,14 @@ public class Main {
         Output.printOutputInformation(dijskstraBHOutput, "Dijkstra BH", dijkstraBHExecutionTime);
         Output.printOutputInformation(bellmanFordOutput, "Bellman-Ford", bellmanFordExecutionTime);
         Output.printOutputInformation(floydWarshallOutput, "Floyd-Warshall", floydWarshallExecutionTime);
-//        Output.printOutputInformation(astarOutput, "AStar", aStarExecutionTime);
         Output.printOutputInformation(dijkstraFHOutput, "Dijkstra FH", dijkstraFHExecutionTime);
         Output.printOutputInformation(johnsonOutput, "Johnson", johnsonExecutionTime);
+
+        System.out.println("---------------------------------------Algorihtem Correctness-------------------------------------");
+        System.out.println("Dijkstra BH correct: " + OutputVerifier.verifyOutput(input.getGraph(), dijskstraBHOutput));
+        System.out.println("Bellman-Ford correct: " + OutputVerifier.verifyOutput(input.getGraph(), bellmanFordOutput));
+        System.out.println("Floyd-Warshall correct: " + OutputVerifier.verifyOutput(input.getGraph(), floydWarshallOutput));
+        System.out.println("Dijkstra FH correct: " + OutputVerifier.verifyOutput(input.getGraph(), dijkstraFHOutput));
+        System.out.println("Johnson correct: " + OutputVerifier.verifyOutput(input.getGraph(), johnsonOutput));
     }
 }

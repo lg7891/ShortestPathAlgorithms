@@ -66,6 +66,12 @@ public class Johnson {
 
         // Step 5: Adjust final path cost to original weights
         int correctedCost = reweightedOutput.getTotalPathPrice() + h[target] - h[src];
+
+        // Check if no path is found, if true return -1
+        if (correctedCost == Integer.MAX_VALUE) {
+          return new Output(-1, new ArrayList<>());
+        }
+
         return new Output(correctedCost, reweightedOutput.getShortestPath());
     }
 
