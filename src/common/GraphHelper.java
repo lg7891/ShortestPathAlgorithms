@@ -8,8 +8,13 @@ import org.jgrapht.graph.SimpleGraph;
 import org.jgrapht.graph.SimpleWeightedGraph;
 import org.jgrapht.util.SupplierUtil;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Random;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GraphHelper {
 
@@ -77,11 +82,7 @@ public class GraphHelper {
         generator.generateGraph(weightedGraph);
 
         // Assign random weights to each edge
-        Random random = new Random();
-        for (DefaultWeightedEdge edge : weightedGraph.edgeSet()) {
-            double weight = 1 + random.nextInt(10);
-            weightedGraph.setEdgeWeight(edge, weight);
-        }
+        weightedGraph = addWeights(weightedGraph);
 
         return weightedGraph;
     }
@@ -105,5 +106,63 @@ public class GraphHelper {
         System.out.println("Graph connections:");
         printGraph(graph);
         System.out.println("-----------------------------------------------------------------------------");
+    }
+
+    public Input generateSNAPGraph(String filePath) {
+
+        Graph<Integer, DefaultWeightedEdge> weightedGraph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
+        int numOfNodes = 0;
+        int numOfEdges = 0;
+        // This is supposed to replace the importer
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("# Nodes:")) {
+                    System.out.println("splitting line: " + line);
+                    String[] splitLine = line.split(" Edges: ");
+                    numOfEdges = Integer.parseInt(splitLine[1]);
+                    numOfNodes = Integer.parseInt(splitLine[0].split(" ")[2]);
+                }
+
+                if (line.startsWith("#") || line.isBlank()) continue;
+
+                String[] parts = line.split("\\s+");
+                Integer src = Integer.parseInt(parts[0]);
+                Integer dst = Integer.parseInt(parts[1]);
+
+                if (src.equals(dst)) {
+                    continue; // skip self-loop
+                }
+
+                weightedGraph.addVertex(src);
+                weightedGraph.addVertex(dst);
+
+                DefaultWeightedEdge e = weightedGraph.addEdge(src, dst);
+                if (e != null) {
+                    weightedGraph.setEdgeWeight(e, Math.random());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+            return null;
+        }
+
+        System.out.println("NumOfNodes: " + numOfNodes);
+        System.out.println("NumOfEdges: " + numOfEdges);
+
+        weightedGraph = addWeights(weightedGraph);
+
+        return new Input(0, numOfNodes - 1, weightedGraph);
+    }
+    
+    public Graph<Integer, DefaultWeightedEdge> addWeights(Graph<Integer, DefaultWeightedEdge> graph) {
+        // Assign random weights to each edge
+        Random random = new Random();
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            double weight = 1 + random.nextInt(10);
+            graph.setEdgeWeight(edge, weight);
+        }
+        
+        return graph;
     }
 }
