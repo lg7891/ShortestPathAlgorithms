@@ -10,69 +10,88 @@ import java.util.*;
 public class DijkstraBinaryHeap {
 
     public static Output dijkstraBinaryHeap(Input input) {
-
-        // Set source and target vertices index
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
 
-        // Set number of vertices
+        // Create vertex-to-index mapping
+        Map<Integer, Integer> vertexToIndex = new HashMap<>();
+        Map<Integer, Integer> indexToVertex = new HashMap<>();
+        int index = 0;
+        for (Integer vertex : graph.vertexSet()) {
+            vertexToIndex.put(vertex, index);
+            indexToVertex.put(index, vertex);
+            index++;
+        }
+
         int V = graph.vertexSet().size();
 
-        // Initialize distance array; Fill every with MAX_VALUE except for 1st
-        int[] dist = new int[V];
-        Arrays.fill(dist, Integer.MAX_VALUE);
-        dist[src] = 0;
+        double[] dist = new double[V];
+        Arrays.fill(dist, Double.POSITIVE_INFINITY);
 
-        // Storing previous nodes; Create Array for previously visited vertices
         int[] prev = new int[V];
         Arrays.fill(prev, -1);
 
-        // PriorityQueue to store vertices that need to be processed (pairs of [distance, node])
-        PriorityQueue<int[]> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(a -> a[0]));
-        priorityQueue.offer(new int[]{0, src}); // offer() is basically add()
+        boolean[] visited = new boolean[V];
 
-        // While there is something to visit
-        while (!priorityQueue.isEmpty()) {
+        // Map src and target to indices
+        int srcIdx = vertexToIndex.get(src);
+        int targetIdx = vertexToIndex.get(target);
 
-            // TODO: check this, simplify if possible
-            int[] current =  priorityQueue.poll(); // Get the closest node (poll() returns the smallest distance
-            int d = current[0]; // Distance value
-            int u  = current[1]; // Node index
+        dist[srcIdx] = 0;
 
-            // Node can be added more times that is why we skip it
-            // Only the smallest distance is valid
-            if (d > dist[u]) continue;
+        // PriorityQueue: [distance, vertexIndex]
+        PriorityQueue<double[]> pq = new PriorityQueue<>(Comparator.comparingDouble(a -> a[0]));
+        pq.offer(new double[]{0, srcIdx});
 
-            // For each edge connected to u find a neighbour
+        while (!pq.isEmpty()) {
+            double[] cur = pq.poll();
+            double d = cur[0];
+            int uIdx = (int) cur[1];
+
+            // Skip if already visited (optimization)
+            if (visited[uIdx]) continue;
+            visited[uIdx] = true;
+
+            // Get original vertex ID
+            Integer u = indexToVertex.get(uIdx);
+
+            // UNDIRECTED: Explore ALL edges connected to u
             for (DefaultWeightedEdge edge : graph.edgesOf(u)) {
-                int v = graph.getEdgeSource(edge).equals(u)
-                        ? graph.getEdgeTarget(edge)
-                        : graph.getEdgeSource(edge); // Because it is undirected we use ?:
+                // Get the neighbor (could be source or target)
+                Integer neighbor = graph.getEdgeSource(edge);
+                if (neighbor.equals(u)) {
+                    neighbor = graph.getEdgeTarget(edge);
+                }
 
-                double weight = graph.getEdgeWeight(edge); // Edge cost/weight
+                int vIdx = vertexToIndex.get(neighbor);
 
-                // if going through u gives shorter path to v, update the queue
-                if (dist[v] > dist[u] + weight) {
-                    dist[v] = (int)(dist[u] + weight);
-                    prev[v] = u;
-                    priorityQueue.offer(new int[]{dist[v], v});
+                // Skip if already visited
+                if (visited[vIdx]) continue;
+
+                double weight = graph.getEdgeWeight(edge);
+                double newDist = dist[uIdx] + weight;
+
+                if (newDist < dist[vIdx]) {
+                    dist[vIdx] = newDist;
+                    prev[vIdx] = uIdx;
+                    pq.offer(new double[]{newDist, vIdx});
                 }
             }
         }
 
-        // Check if no path is found, if true return -1
-        if (dist[target] == Integer.MAX_VALUE) {
-          return new Output(-1, new ArrayList<>());
+        // Check if target is reachable
+        if (dist[targetIdx] == Double.POSITIVE_INFINITY) {
+            return new Output(-1, new ArrayList<>());
         }
 
-        // Reconstruct shortest path
-        ArrayList<Integer> shortestPath = new ArrayList<>();
-        for (int at = target; at != -1; at = prev[at]) {
-            shortestPath.add(at);
+        // Reconstruct path using original vertex IDs
+        ArrayList<Integer> path = new ArrayList<>();
+        for (int at = targetIdx; at != -1; at = prev[at]) {
+            path.add(indexToVertex.get(at));
         }
-        Collections.reverse(shortestPath);
+        Collections.reverse(path);
 
-        return new Output(dist[target], shortestPath);
+        return new Output((int) dist[targetIdx], path);
     }
 }

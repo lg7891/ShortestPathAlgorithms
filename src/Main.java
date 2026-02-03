@@ -27,9 +27,14 @@ public class Main {
             /**
              *  Option 2: Graph from real life
              *  Set file path to SNAP file. Generator provides the required Input all data is retrieved from the file.
+             *
+             *  Uncoment the line that you wish to execute.
              */
 //            input = getSNAPInput("resources/social-networks/facebook_combined.txt");
-            input = getSNAPInput("resources/roadNet-CA.txt");
+//            input = getSNAPInput("resources/internet-p2p-networks/p2p-Gnutella04.txt");
+//            input = getSNAPInput("resources/road-networks/roadNet-TX.txt");
+//            input = getSNAPInput("resources/soc-sign-Slashdot081106.txt");
+            input = getSNAPInput("resources/product-co-purchasing-net/CA-HepTh.txt");
         }
 
         /**
@@ -41,7 +46,7 @@ public class Main {
         runTests(
                 input,
                 true, // Run Dijsktra BH
-                true, // Run Dijkstra FH
+                false, // Run Dijkstra FH
                 false, // Run Bellman-Ford
                 false, // Run Johnson
                 false  // Run Floyd-Warshall
@@ -55,7 +60,8 @@ public class Main {
 
     private static Input getArtificialInput(int numOfNodes, int numOfEdges) {
         GraphHelper graphHelper = new GraphHelper();
-        return new Input(0, numOfNodes - 1, graphHelper.generateGraph(numOfNodes, numOfEdges));
+        int[] srcAndTarget = GraphHelper.srcTargetGenerator(numOfNodes);
+        return new Input(srcAndTarget[0],  srcAndTarget[1], graphHelper.generateGraph(numOfNodes, numOfEdges));
     }
 
     private static void runTests (Input input, boolean dbh, boolean dfh, boolean bf, boolean j, boolean fw) {

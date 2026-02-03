@@ -4,78 +4,103 @@ import common.Input;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.jgrapht.graph.SimpleWeightedGraph;
 
 import java.util.*;
 
 public class Johnson {
 
     public static Output johnson(Input input) {
-
-        // Set source and target vertices index
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
 
-        // Set number of vertices
+        // Create vertex-to-index mapping
+        Map<Integer, Integer> vertexToIndex = new HashMap<>();
+        Map<Integer, Integer> indexToVertex = new HashMap<>();
+        int index = 0;
+        for (Integer vertex : graph.vertexSet()) {
+            vertexToIndex.put(vertex, index);
+            indexToVertex.put(index, vertex);
+            index++;
+        }
+
         int V = graph.vertexSet().size();
 
-        // Step 1: Build edge list for Bellman-Ford
+        // Step 1: Build edge list for Bellman-Ford (with mapped indices)
         List<int[]> edges = new ArrayList<>();
-        for (int u : graph.vertexSet()) {
-            for (DefaultWeightedEdge edge : graph.outgoingEdgesOf(u)) {
-                int v = graph.getEdgeTarget(edge);
-                double weight = graph.getEdgeWeight(edge);
-                edges.add(new int[]{u, v, (int) weight});
-            }
+
+        // Use edgeSet() to process each edge only once
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            Integer u = graph.getEdgeSource(edge);
+            Integer v = graph.getEdgeTarget(edge);
+
+            // Skip self-loops
+            if (u.equals(v)) continue;
+
+            int uIdx = vertexToIndex.get(u);
+            int vIdx = vertexToIndex.get(v);
+            int weight = (int) graph.getEdgeWeight(edge);
+
+            // For undirected graphs, add both directions
+            edges.add(new int[]{uIdx, vIdx, weight});
+            edges.add(new int[]{vIdx, uIdx, weight});
         }
 
         // Step 2: Run Bellman-Ford from new vertex (V)
-        int[] h = bellmanFord(edges, V); // h[i] is the potential of vertex i
+        int[] h = bellmanFord(edges, V);
 
         if (h == null) {
-            // Negative weight cycle detected
-            return new Output(Integer.MAX_VALUE, new ArrayList<>());
+            System.out.println("Negative weight cycle detected in Johnson's algorithm.");
+            return new Output(-1, new ArrayList<>());
         }
 
-        // Step 3: Reweight edges
-        Graph<Integer, DefaultWeightedEdge> reweightedGraph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
+        // Step 3: Reweight edges using ORIGINAL vertex IDs
+        Graph<Integer, DefaultWeightedEdge> reweightedGraph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
 
-        for (int i = 0; i < V; i++) {
-            reweightedGraph.addVertex(i);
+        // Add vertices with original IDs
+        for (Integer vertex : graph.vertexSet()) {
+            reweightedGraph.addVertex(vertex);
         }
 
-        for (int u : graph.vertexSet()) {
-            for (DefaultWeightedEdge edge : graph.outgoingEdgesOf(u)) {
-                int v = graph.getEdgeTarget(edge);
+        // Add reweighted edges - use edgeSet() to avoid duplicates
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            Integer u = graph.getEdgeSource(edge);
+            Integer v = graph.getEdgeTarget(edge);
 
-                if (u == v) continue; // Skip self-loops
+            // Skip self-loops
+            if (u.equals(v)) continue;
 
-                int weight = (int) graph.getEdgeWeight(edge);
-                int newWeight = weight + h[u] - h[v];
+            int uIdx = vertexToIndex.get(u);
+            int vIdx = vertexToIndex.get(v);
+            int weight = (int) graph.getEdgeWeight(edge);
+            int newWeight = weight + h[uIdx] - h[vIdx];
 
-                DefaultWeightedEdge newEdge = reweightedGraph.addEdge(u, v);
-                if (newEdge != null) {
-                    reweightedGraph.setEdgeWeight(newEdge, newWeight);
-                }
+            // Add edge (SimpleWeightedGraph handles undirected automatically)
+            DefaultWeightedEdge newEdge = reweightedGraph.addEdge(u, v);
+            if (newEdge != null) {
+                reweightedGraph.setEdgeWeight(newEdge, newWeight);
             }
         }
 
         // Step 4: Run Dijkstra on reweighted graph
-        Output reweightedOutput = DijkstraBinaryHeap.dijkstraBinaryHeap(new Input(src, target, reweightedGraph));
+        Output reweightedOutput = DijkstraBinaryHeap.dijkstraBinaryHeap(
+                new Input(src, target, reweightedGraph)
+        );
 
         // Step 5: Adjust final path cost to original weights
-        int correctedCost = reweightedOutput.getTotalPathPrice() + h[target] - h[src];
-
-        // Check if no path is found, if true return -1
-        if (correctedCost == Integer.MAX_VALUE) {
-          return new Output(-1, new ArrayList<>());
+        if (reweightedOutput.getTotalPathPrice() == -1) {
+            return new Output(-1, new ArrayList<>());
         }
+
+        int srcIdx = vertexToIndex.get(src);
+        int targetIdx = vertexToIndex.get(target);
+        int correctedCost = reweightedOutput.getTotalPathPrice() + h[targetIdx] - h[srcIdx];
 
         return new Output(correctedCost, reweightedOutput.getShortestPath());
     }
 
-    // Bellman-Ford algorithm for reweighting (returns h[] potentials or null if negative cycle)
+    // Bellman-Ford algorithm for reweighting
     private static int[] bellmanFord(List<int[]> edges, int V) {
         int[] dist = new int[V + 1];
         Arrays.fill(dist, Integer.MAX_VALUE);
@@ -89,20 +114,22 @@ public class Johnson {
 
         // Relax all edges V times
         for (int i = 0; i < V; i++) {
+            boolean changed = false;
             for (int[] edge : allEdges) {
                 int u = edge[0], v = edge[1], weight = edge[2];
                 if (dist[u] != Integer.MAX_VALUE && dist[u] + weight < dist[v]) {
                     dist[v] = dist[u] + weight;
+                    changed = true;
                 }
             }
+            if (!changed) break; // Early exit optimization
         }
 
         // Check for negative weight cycles
         for (int[] edge : allEdges) {
             int u = edge[0], v = edge[1], weight = edge[2];
             if (dist[u] != Integer.MAX_VALUE && dist[u] + weight < dist[v]) {
-                System.out.println("Negative weight cycle detected.");
-                return null;
+                return null; // Negative cycle detected
             }
         }
 

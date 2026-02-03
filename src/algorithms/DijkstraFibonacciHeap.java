@@ -12,69 +12,89 @@ import java.util.*;
 public class DijkstraFibonacciHeap {
 
     public static Output dijkstraFibonacciHeap(Input input) {
-
-        // Set source and target vertices index
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
 
-        // Set number of vertices
+        // Create vertex-to-index mapping
+        Map<Integer, Integer> vertexToIndex = new HashMap<>();
+        Map<Integer, Integer> indexToVertex = new HashMap<>();
+        int index = 0;
+        for (Integer vertex : graph.vertexSet()) {
+            vertexToIndex.put(vertex, index);
+            indexToVertex.put(index, vertex);
+            index++;
+        }
+
         int V = graph.vertexSet().size();
 
-        // Initialize distance array; Fill every with MAX_VALUE except for 1st
-        int[] dist = new int[V];
-        Arrays.fill(dist, Integer.MAX_VALUE);
-        dist[src] = 0;
+        double[] dist = new double[V];
+        Arrays.fill(dist, Double.POSITIVE_INFINITY);
 
-        // Storing previous nodes; Create Array for previously visited vertices
         int[] prev = new int[V];
         Arrays.fill(prev, -1);
 
-        // JHeaps FibonacciHeap: key = distance, value = vertex
+        // Map src and target to indices
+        int srcIdx = vertexToIndex.get(src);
+        int targetIdx = vertexToIndex.get(target);
+
+        dist[srcIdx] = 0;
+
         AddressableHeap<Double, Integer> fibHeap = new FibonacciHeap<>();
-        Map<Integer, AddressableHeap.Handle<Double, Integer>> heapHandles = new HashMap<>();
+        Map<Integer, AddressableHeap.Handle<Double, Integer>> handles = new HashMap<>();
 
-        // Insert all vertices with initial distances
-        for (int v : graph.vertexSet()) {
-            AddressableHeap.Handle<Double, Integer> handle =
-                    fibHeap.insert((double) dist[v], v);
-            heapHandles.put(v, handle);
-        }
+        // Insert only source initially (lazy insertion = faster)
+        handles.put(srcIdx, fibHeap.insert(0.0, srcIdx));
 
-        // While there is something to visit
         while (!fibHeap.isEmpty()) {
             AddressableHeap.Handle<Double, Integer> minHandle = fibHeap.deleteMin();
-            int u = minHandle.getValue(); // Node index
+            int uIdx = minHandle.getValue();
+            double currentDist = minHandle.getKey();
 
-            // For each edge connected to u find a neighbour
+            // Skip stale heap entries
+            if (currentDist > dist[uIdx]) continue;
+
+            // Get original vertex ID
+            Integer u = indexToVertex.get(uIdx);
+
+            // UNDIRECTED: Explore ALL edges connected to u
             for (DefaultWeightedEdge edge : graph.edgesOf(u)) {
-                int v = graph.getEdgeSource(edge).equals(u)
-                        ? graph.getEdgeTarget(edge)
-                        : graph.getEdgeSource(edge); // Because it is undirected we use ?:
+                // Get the neighbor (could be source or target)
+                Integer neighbor = graph.getEdgeSource(edge);
+                if (neighbor.equals(u)) {
+                    neighbor = graph.getEdgeTarget(edge);
+                }
 
-                double weight = graph.getEdgeWeight(edge); // Edge cost/weight
+                int vIdx = vertexToIndex.get(neighbor);
 
-                // if going through u gives shorter path to v, update the queue
-                if (dist[u] != Integer.MAX_VALUE && dist[v] > dist[u] + weight) {
-                    dist[v] = (int) (dist[u] + weight);
-                    prev[v] = u;
-                    heapHandles.get(v).decreaseKey((double) dist[v]);
+                double weight = graph.getEdgeWeight(edge);
+                double newDist = dist[uIdx] + weight;
+
+                if (newDist < dist[vIdx]) {
+                    dist[vIdx] = newDist;
+                    prev[vIdx] = uIdx;
+
+                    if (handles.containsKey(vIdx)) {
+                        handles.get(vIdx).decreaseKey(newDist);
+                    } else {
+                        handles.put(vIdx, fibHeap.insert(newDist, vIdx));
+                    }
                 }
             }
         }
 
-        // Check if no path is found, if true return -1
-        if (dist[target] == Integer.MAX_VALUE) {
-          return new Output(-1, new ArrayList<>());
+        // Check if target is reachable
+        if (dist[targetIdx] == Double.POSITIVE_INFINITY) {
+            return new Output(-1, new ArrayList<>());
         }
 
-        // Reconstruct shortest path
-        ArrayList<Integer> shortestPath = new ArrayList<>();
-        for (int at = target; at != -1; at = prev[at]) {
-            shortestPath.add(at);
+        // Reconstruct path using original vertex IDs
+        ArrayList<Integer> path = new ArrayList<>();
+        for (int at = targetIdx; at != -1; at = prev[at]) {
+            path.add(indexToVertex.get(at));
         }
-        Collections.reverse(shortestPath);
+        Collections.reverse(path);
 
-        return new Output(dist[target], shortestPath);
+        return new Output((int) dist[targetIdx], path);
     }
 }

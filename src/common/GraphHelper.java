@@ -11,10 +11,8 @@ import org.jgrapht.util.SupplierUtil;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class GraphHelper {
 
@@ -109,52 +107,78 @@ public class GraphHelper {
     }
 
     public Input generateSNAPGraph(String filePath) {
+        Graph<Integer, DefaultWeightedEdge> weightedGraph =
+                new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
 
-        Graph<Integer, DefaultWeightedEdge> weightedGraph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
+        Map<Integer, Integer> idMap = new HashMap<>();
+        int nextId = 0;
         int numOfNodes = 0;
         int numOfEdges = 0;
-        // This is supposed to replace the importer
+
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
+
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("# Nodes:")) {
-                    System.out.println("splitting line: " + line);
                     String[] splitLine = line.split(" Edges: ");
                     numOfEdges = Integer.parseInt(splitLine[1]);
                     numOfNodes = Integer.parseInt(splitLine[0].split(" ")[2]);
+                    continue;
                 }
 
                 if (line.startsWith("#") || line.isBlank()) continue;
 
                 String[] parts = line.split("\\s+");
-                Integer src = Integer.parseInt(parts[0]);
-                Integer dst = Integer.parseInt(parts[1]);
+                int srcOriginal = Integer.parseInt(parts[0]);
+                int dstOriginal = Integer.parseInt(parts[1]);
 
-                if (src.equals(dst)) {
-                    continue; // skip self-loop
+                if (srcOriginal == dstOriginal) continue;
+
+                if (!idMap.containsKey(srcOriginal)) {
+                    idMap.put(srcOriginal, nextId++);
                 }
+                if (!idMap.containsKey(dstOriginal)) {
+                    idMap.put(dstOriginal, nextId++);
+                }
+
+                int src = idMap.get(srcOriginal);
+                int dst = idMap.get(dstOriginal);
 
                 weightedGraph.addVertex(src);
                 weightedGraph.addVertex(dst);
-
-                DefaultWeightedEdge e = weightedGraph.addEdge(src, dst);
-                if (e != null) {
-                    weightedGraph.setEdgeWeight(e, Math.random());
-                }
+                weightedGraph.addEdge(src, dst);
+                // Don't set weights here - do it later with addWeights()
             }
+
         } catch (IOException e) {
             System.out.println("Error reading file: " + e.getMessage());
             return null;
         }
 
-        System.out.println("NumOfNodes: " + numOfNodes);
-        System.out.println("NumOfEdges: " + numOfEdges);
+        // Add weights after graph construction
+        addWeights(weightedGraph);
 
-        weightedGraph = addWeights(weightedGraph);
+        // Pick random actual vertices that exist
+        List<Integer> vertices = new ArrayList<>(weightedGraph.vertexSet());
 
-        return new Input(0, numOfNodes - 1, weightedGraph);
+        if (vertices.size() < 2) {
+            throw new IllegalStateException("Graph must contain at least two vertices");
+        }
+
+        Random random = new Random();
+
+        int srcIndex = random.nextInt(vertices.size());
+        int dstIndex;
+        do {
+            dstIndex = random.nextInt(vertices.size());
+        } while (dstIndex == srcIndex);
+
+        int src = vertices.get(srcIndex);
+        int dst = vertices.get(dstIndex);
+
+        return new Input(src, dst, weightedGraph);
     }
-    
+
     public Graph<Integer, DefaultWeightedEdge> addWeights(Graph<Integer, DefaultWeightedEdge> graph) {
         // Assign random weights to each edge
         Random random = new Random();
@@ -164,5 +188,13 @@ public class GraphHelper {
         }
         
         return graph;
+    }
+
+    public static int[] srcTargetGenerator(int numOfNodes) {
+        Random random = new Random();
+        int src = random.nextInt(numOfNodes);
+        int target = random.nextInt(numOfNodes);
+
+        return new int[] { src, target };
     }
 }

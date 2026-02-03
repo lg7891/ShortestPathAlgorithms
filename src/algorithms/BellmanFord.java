@@ -4,79 +4,102 @@ import common.Input;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BellmanFord {
 
     public static Output bellmanFord(Input input) {
-
-        // Set source and target vertices index
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
 
-        // Set number of vertices
-        int V = graph.vertexSet().size();
-
-        // Initialize distance array; Fill every with MAX_VALUE except for 1st
-        int[] dist = new int[V];
-        int[] prev = new int[V]; // here for easier path reconstruction
-        Arrays.fill(dist, Integer.MAX_VALUE);
-        Arrays.fill(prev, -1);
-        dist[src] = 0;
-
-        // CORE IDEA: In a graph with V vertices, the shortest path can have at most V-1 edges.
-        // Relax edges V-1 times
-        for (int i = 0; i < V - 1; i++) {
-            for (DefaultWeightedEdge edge : graph.edgeSet()) {
-                int u = graph.getEdgeSource(edge); // shortest distance to u
-                int v = graph.getEdgeTarget(edge); // shortest distance to v
-                int weight = (int) graph.getEdgeWeight(edge);
-
-                if (dist[u] != Integer.MAX_VALUE && dist[u] + weight < dist[v]) {
-                    dist[v] = dist[u] + weight;
-                    prev[v] = u;
-                }
-                // Reverse the previous check
-                if (dist[v] != Integer.MAX_VALUE && dist[v] + weight < dist[u]) {
-                    dist[u] = dist[v] + weight;
-                    prev[u] = v;
-                }
-            }
+        // Create vertex-to-index mapping
+        Map<Integer, Integer> vertexToIndex = new HashMap<>();
+        Map<Integer, Integer> indexToVertex = new HashMap<>();
+        int index = 0;
+        for (Integer vertex : graph.vertexSet()) {
+            vertexToIndex.put(vertex, index);
+            indexToVertex.put(index, vertex);
+            index++;
         }
 
-        // Negative cycle check
-        // If after V-1 checks you can still find shorter path --> graph has negative cycle
-        for (DefaultWeightedEdge edge : graph.edgeSet()) {
-            int u = graph.getEdgeSource(edge);
-            int v = graph.getEdgeTarget(edge);
-            int weight = (int) graph.getEdgeWeight(edge);
+        int V = graph.vertexSet().size();
+        long[] dist = new long[V];
+        int[] prev = new int[V];
 
-            if (dist[u] != Integer.MAX_VALUE && dist[u] + weight < dist[v]) {
+        Arrays.fill(dist, Long.MAX_VALUE);
+        Arrays.fill(prev, -1);
+
+        // Map src and target to indices
+        int srcIdx = vertexToIndex.get(src);
+        int targetIdx = vertexToIndex.get(target);
+
+        dist[srcIdx] = 0;
+
+        // Relax edges V-1 times
+        for (int i = 0; i < V - 1; i++) {
+            boolean changed = false;
+
+            for (DefaultWeightedEdge edge : graph.edgeSet()) {
+                Integer u = graph.getEdgeSource(edge);
+                Integer v = graph.getEdgeTarget(edge);
+                long weight = (long) graph.getEdgeWeight(edge);
+
+                int uIdx = vertexToIndex.get(u);
+                int vIdx = vertexToIndex.get(v);
+
+                // Relax u -> v
+                if (dist[uIdx] != Long.MAX_VALUE && dist[uIdx] + weight < dist[vIdx]) {
+                    dist[vIdx] = dist[uIdx] + weight;
+                    prev[vIdx] = uIdx;
+                    changed = true;
+                }
+
+                // Relax v -> u (undirected graph)
+                if (dist[vIdx] != Long.MAX_VALUE && dist[vIdx] + weight < dist[uIdx]) {
+                    dist[uIdx] = dist[vIdx] + weight;
+                    prev[uIdx] = vIdx;
+                    changed = true;
+                }
+            }
+
+            // Early termination if no changes
+            if (!changed) break;
+        }
+
+        // Negative cycle detection (both directions)
+        for (DefaultWeightedEdge edge : graph.edgeSet()) {
+            Integer u = graph.getEdgeSource(edge);
+            Integer v = graph.getEdgeTarget(edge);
+            long weight = (long) graph.getEdgeWeight(edge);
+
+            int uIdx = vertexToIndex.get(u);
+            int vIdx = vertexToIndex.get(v);
+
+            if ((dist[uIdx] != Long.MAX_VALUE && dist[uIdx] + weight < dist[vIdx]) ||
+                    (dist[vIdx] != Long.MAX_VALUE && dist[vIdx] + weight < dist[uIdx])) {
                 System.out.println("Graph contains a negative weight cycle!");
                 return new Output(-1, new ArrayList<>());
             }
         }
 
-        // This is for handling unreachable nodes
-        if (dist[target] == Integer.MAX_VALUE) {
+        // Check if target is reachable
+        if (dist[targetIdx] == Long.MAX_VALUE) {
             return new Output(-1, new ArrayList<>());
         }
 
-        // Check if no path is found, if true return -1
-        if (dist[target] == Integer.MAX_VALUE) {
-          return new Output(-1, new ArrayList<>());
-        }
-
-        // Reverse the path
+        // Reconstruct path using original vertex IDs
         ArrayList<Integer> shortestPath = new ArrayList<>();
-        for (int at = target; at != -1; at = prev[at]) {
-            shortestPath.add(at);
+        for (int at = targetIdx; at != -1; at = prev[at]) {
+            shortestPath.add(indexToVertex.get(at));
         }
         Collections.reverse(shortestPath);
 
-        return new Output(dist[target], shortestPath);
+        return new Output((int) dist[targetIdx], shortestPath);
     }
 }
