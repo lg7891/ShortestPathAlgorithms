@@ -19,10 +19,10 @@ public class Main {
         if (args.length > 0) {
             /**
              *  Option 1: Artificially generated graph
-             *  Uses number program arguments (number of nodes, number of edges) as input to generate
+             *  Uses number program arguments (number of nodes, density, seed for random geenration) as input to generate
              *  a weighted graph.
              */
-            input = getArtificialInput(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+            input = getArtificialInput(Integer.parseInt(args[0]), Double.parseDouble(args[1]), Integer.parseInt(args[2]));
         } else {
             /**
              *  Option 2: Graph from real life
@@ -41,7 +41,7 @@ public class Main {
          *  Print basic information about the graph (number of nodes, number of edges,
          *  list of nodes and edges, connections)
          */
-        graphHelper.printBasicInfo(input.getGraph());
+//        graphHelper.printBasicInfo(input.getGraph());
 
         runTests(
                 input,
@@ -55,13 +55,13 @@ public class Main {
 
     private static Input getSNAPInput(String filePath) {
         GraphHelper graphHelper = new GraphHelper();
-        return graphHelper.generateSNAPGraph(filePath);
+        return graphHelper.generateSNAPGraph(filePath, 1);
     }
 
-    private static Input getArtificialInput(int numOfNodes, int numOfEdges) {
+    private static Input getArtificialInput(int numOfNodes, double density, int seed) {
         GraphHelper graphHelper = new GraphHelper();
-        int[] srcAndTarget = GraphHelper.srcTargetGenerator(numOfNodes);
-        return new Input(srcAndTarget[0],  srcAndTarget[1], graphHelper.generateGraph(numOfNodes, numOfEdges));
+        int[] srcAndTarget = GraphHelper.srcTargetGenerator(numOfNodes, seed);
+        return new Input(srcAndTarget[0],  srcAndTarget[1], graphHelper.generateGraph(numOfNodes, density, seed));
     }
 
     private static void runTests (Input input, boolean dbh, boolean dfh, boolean bf, boolean j, boolean fw) {

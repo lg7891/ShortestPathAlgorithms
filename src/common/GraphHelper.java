@@ -58,7 +58,7 @@ public class GraphHelper {
         return simpleGraph;
     }
 
-    public Graph<Integer, DefaultWeightedEdge> generateGraph(int numOfNodes, int numOfEdges) {
+    public Graph<Integer, DefaultWeightedEdge> generateGraph(int numOfNodes, double density, int seed) {
         // Supplier to generate unique vertex IDs (0,1,2,...)
         Supplier<Integer> vSupplier = new Supplier<>() {
             private int id = 0;
@@ -68,21 +68,21 @@ public class GraphHelper {
             }
         };
 
-        // Create a weighted undirected graph
-        Graph<Integer, DefaultWeightedEdge> weightedGraph =
+        long maxEdges = (long) numOfNodes * (numOfNodes - 1) / 2;
+        long edges = Math.round(density * maxEdges);
+        edges = Math.min(edges, maxEdges);
+
+        int numOfEdges = Math.toIntExact(edges);
+
+        Graph<Integer, DefaultWeightedEdge> graph =
                 new SimpleWeightedGraph<>(vSupplier, SupplierUtil.createDefaultWeightedEdgeSupplier());
 
-        // Initialize random graph generator
         GnmRandomGraphGenerator<Integer, DefaultWeightedEdge> generator =
                 new GnmRandomGraphGenerator<>(numOfNodes, numOfEdges);
 
-        // Generate graph
-        generator.generateGraph(weightedGraph);
+        generator.generateGraph(graph);
 
-        // Assign random weights to each edge
-        weightedGraph = addWeights(weightedGraph);
-
-        return weightedGraph;
+        return addWeights(graph, seed);
     }
 
     public static void printGraph(Graph<Integer, DefaultWeightedEdge> graph) {
@@ -106,9 +106,8 @@ public class GraphHelper {
         System.out.println("-----------------------------------------------------------------------------");
     }
 
-    public Input generateSNAPGraph(String filePath) {
-        Graph<Integer, DefaultWeightedEdge> weightedGraph =
-                new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
+    public Input generateSNAPGraph(String filePath, int seed) {
+        Graph<Integer, DefaultWeightedEdge> weightedGraph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
 
         Map<Integer, Integer> idMap = new HashMap<>();
         int nextId = 0;
@@ -156,7 +155,7 @@ public class GraphHelper {
         }
 
         // Add weights after graph construction
-        addWeights(weightedGraph);
+        addWeights(weightedGraph, seed);
 
         // Pick random actual vertices that exist
         List<Integer> vertices = new ArrayList<>(weightedGraph.vertexSet());
@@ -165,7 +164,7 @@ public class GraphHelper {
             throw new IllegalStateException("Graph must contain at least two vertices");
         }
 
-        Random random = new Random();
+        Random random = new Random(seed);
 
         int srcIndex = random.nextInt(vertices.size());
         int dstIndex;
@@ -179,9 +178,9 @@ public class GraphHelper {
         return new Input(src, dst, weightedGraph);
     }
 
-    public Graph<Integer, DefaultWeightedEdge> addWeights(Graph<Integer, DefaultWeightedEdge> graph) {
+    public Graph<Integer, DefaultWeightedEdge> addWeights(Graph<Integer, DefaultWeightedEdge> graph, int seed) {
         // Assign random weights to each edge
-        Random random = new Random();
+        Random random = new Random(seed);
         for (DefaultWeightedEdge edge : graph.edgeSet()) {
             double weight = 1 + random.nextInt(10);
             graph.setEdgeWeight(edge, weight);
@@ -190,8 +189,8 @@ public class GraphHelper {
         return graph;
     }
 
-    public static int[] srcTargetGenerator(int numOfNodes) {
-        Random random = new Random();
+    public static int[] srcTargetGenerator(int numOfNodes, int seed) {
+        Random random = new Random(seed);
         int src = random.nextInt(numOfNodes);
         int target = random.nextInt(numOfNodes);
 
