@@ -1,6 +1,6 @@
-package algorithms;
+package algorithms.jgpraht;
 
-import common.Input;
+import common.JGraphTInput;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class BellmanFord {
 
-    public static Output bellmanFord(Input input) {
+    public static Output bellmanFord(JGraphTInput input) {
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
@@ -70,22 +70,6 @@ public class BellmanFord {
 
             // Early termination if no changes
             if (!changed) break;
-        }
-
-        // Negative cycle detection (both directions)
-        for (DefaultWeightedEdge edge : graph.edgeSet()) {
-            Integer u = graph.getEdgeSource(edge);
-            Integer v = graph.getEdgeTarget(edge);
-            long weight = (long) graph.getEdgeWeight(edge);
-
-            int uIdx = vertexToIndex.get(u);
-            int vIdx = vertexToIndex.get(v);
-
-            if ((dist[uIdx] != Long.MAX_VALUE && dist[uIdx] + weight < dist[vIdx]) ||
-                    (dist[vIdx] != Long.MAX_VALUE && dist[vIdx] + weight < dist[uIdx])) {
-                System.out.println("Graph contains a negative weight cycle!");
-                return new Output(-1, new ArrayList<>());
-            }
         }
 
         // Check if target is reachable

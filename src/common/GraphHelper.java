@@ -11,7 +11,14 @@ import org.jgrapht.util.SupplierUtil;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class GraphHelper {
@@ -38,6 +45,7 @@ public class GraphHelper {
         // Supplier to generate unique vertex IDs (0,1,2,...)
         Supplier<Integer> vSupplier = new Supplier<>() {
             private int id = 0;
+
             @Override
             public Integer get() {
                 return id++;
@@ -62,6 +70,7 @@ public class GraphHelper {
         // Supplier to generate unique vertex IDs (0,1,2,...)
         Supplier<Integer> vSupplier = new Supplier<>() {
             private int id = 0;
+
             @Override
             public Integer get() {
                 return id++;
@@ -106,47 +115,59 @@ public class GraphHelper {
         System.out.println("-----------------------------------------------------------------------------");
     }
 
-    public Input generateSNAPGraph(String filePath, int seed) {
-        Graph<Integer, DefaultWeightedEdge> weightedGraph = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
+    public JGraphTInput generateSNAPGraph(String filePath, int seed) {
+        Graph<Integer, DefaultWeightedEdge> weightedGraph = new SimpleWeightedGraph<>(
+                DefaultWeightedEdge.class);
 
         Map<Integer, Integer> idMap = new HashMap<>();
         int nextId = 0;
         int numOfNodes = 0;
-        int numOfEdges = 0;
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
 
             while ((line = br.readLine()) != null) {
+
+                // Read node count (edges count intentionally ignored)
                 if (line.startsWith("# Nodes:")) {
-                    String[] splitLine = line.split(" Edges: ");
-                    numOfEdges = Integer.parseInt(splitLine[1]);
-                    numOfNodes = Integer.parseInt(splitLine[0].split(" ")[2]);
+                    String[] parts = line.split("\\s+");
+                    numOfNodes = Integer.parseInt(parts[2]);
                     continue;
                 }
 
-                if (line.startsWith("#") || line.isBlank()) continue;
+                // Skip comments and empty lines
+                if (line.startsWith("#") || line.isBlank()) {
+                    continue;
+                }
 
+                // Parse edge
                 String[] parts = line.split("\\s+");
                 int srcOriginal = Integer.parseInt(parts[0]);
                 int dstOriginal = Integer.parseInt(parts[1]);
 
-                if (srcOriginal == dstOriginal) continue;
+                // Ignore self-loops
+                if (srcOriginal == dstOriginal) {
+                    continue;
+                }
 
-                if (!idMap.containsKey(srcOriginal)) {
-                    idMap.put(srcOriginal, nextId++);
-                }
-                if (!idMap.containsKey(dstOriginal)) {
-                    idMap.put(dstOriginal, nextId++);
-                }
+                // Map original IDs to compact IDs
+                idMap.putIfAbsent(srcOriginal, nextId++);
+                idMap.putIfAbsent(dstOriginal, nextId++);
 
                 int src = idMap.get(srcOriginal);
                 int dst = idMap.get(dstOriginal);
 
-                weightedGraph.addVertex(src);
-                weightedGraph.addVertex(dst);
-                weightedGraph.addEdge(src, dst);
-                // Don't set weights here - do it later with addWeights()
+                // Canonical undirected edge
+                int u = Math.min(src, dst);
+                int v = Math.max(src, dst);
+
+                weightedGraph.addVertex(u);
+                weightedGraph.addVertex(v);
+
+                // Prevent duplicate edges from directed input
+                if (!weightedGraph.containsEdge(u, v)) {
+                    weightedGraph.addEdge(u, v);
+                }
             }
 
         } catch (IOException e) {
@@ -154,10 +175,10 @@ public class GraphHelper {
             return null;
         }
 
-        // Add weights after graph construction
+        // Assign weights after construction
         addWeights(weightedGraph, seed);
 
-        // Pick random actual vertices that exist
+        // Pick two distinct random vertices
         List<Integer> vertices = new ArrayList<>(weightedGraph.vertexSet());
 
         if (vertices.size() < 2) {
@@ -175,18 +196,73 @@ public class GraphHelper {
         int src = vertices.get(srcIndex);
         int dst = vertices.get(dstIndex);
 
-        return new Input(src, dst, weightedGraph);
+        return new JGraphTInput(src, dst, weightedGraph);
     }
 
-    public Graph<Integer, DefaultWeightedEdge> addWeights(Graph<Integer, DefaultWeightedEdge> graph, int seed) {
+    public Graph<Integer, DefaultWeightedEdge> addWeights(
+            Graph<Integer, DefaultWeightedEdge> graph, int seed) {
         // Assign random weights to each edge
         Random random = new Random(seed);
         for (DefaultWeightedEdge edge : graph.edgeSet()) {
             double weight = 1 + random.nextInt(10);
             graph.setEdgeWeight(edge, weight);
         }
-        
+
         return graph;
+    }
+
+    public CustomGraph generateCustomGraph(int numOfNodes, double density, int seed) {
+        Random random = new Random(seed);
+        long maxEdges = (long) numOfNodes * (numOfNodes - 1) / 2;
+        int edges = (int) Math.min(Math.round(density * maxEdges), maxEdges);
+
+        // Collect edges first
+        Set<Long> usedEdges = new HashSet<>(edges * 2);
+        int[] us = new int[edges], vs = new int[edges], ws = new int[edges];
+        int count = 0;
+
+        while (count < edges) {
+            int u = random.nextInt(numOfNodes);
+            int v = random.nextInt(numOfNodes);
+            if (u == v)
+                continue;
+            long key = ((long) Math.min(u, v) << 32) | Math.max(u, v);
+            if (!usedEdges.add(key))
+                continue;
+            us[count] = u;
+            vs[count] = v;
+            ws[count] = random.nextInt(10) + 1;
+            count++;
+        }
+
+        // Count degree of each node (each undirected edge contributes to 2 nodes)
+        int[] degree = new int[numOfNodes];
+        for (int i = 0; i < edges; i++) {
+            degree[us[i]]++;
+            degree[vs[i]]++;
+        }
+
+        // Build CSR offset array
+        int[] adjOffset = new int[numOfNodes + 1];
+        for (int i = 0; i < numOfNodes; i++) {
+            adjOffset[i + 1] = adjOffset[i] + degree[i];
+        }
+
+        // Fill adjacency arrays
+        int totalAdj = adjOffset[numOfNodes]; // == 2 * edges
+        int[] adjTarget = new int[totalAdj];
+        int[] adjWeight = new int[totalAdj];
+        int[] cursor = Arrays.copyOf(adjOffset, numOfNodes); // write pointer per node
+
+        for (int i = 0; i < edges; i++) {
+            int u = us[i], v = vs[i], w = ws[i];
+            adjTarget[cursor[u]] = v;
+            adjWeight[cursor[u]++] = w;
+            adjTarget[cursor[v]] = u;
+            adjWeight[cursor[v]++] = w;
+        }
+
+        return new CustomGraph(numOfNodes, edges, adjOffset, adjTarget, adjWeight);
     }
 
     public static int[] srcTargetGenerator(int numOfNodes, int seed) {

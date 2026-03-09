@@ -1,6 +1,6 @@
-package algorithms;
+package algorithms.jgpraht;
 
-import common.Input;
+import common.JGraphTInput;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class FloydWarshall {
 
-    public static Output floydWarshall(Input input) {
+    public static Output floydWarshall(JGraphTInput input) {
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();

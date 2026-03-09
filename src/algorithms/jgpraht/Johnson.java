@@ -1,6 +1,6 @@
-package algorithms;
+package algorithms.jgpraht;
 
-import common.Input;
+import common.JGraphTInput;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -10,7 +10,7 @@ import java.util.*;
 
 public class Johnson {
 
-    public static Output johnson(Input input) {
+    public static Output johnson(JGraphTInput input) {
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
@@ -85,7 +85,7 @@ public class Johnson {
 
         // Step 4: Run Dijkstra on reweighted graph
         Output reweightedOutput = DijkstraBinaryHeap.dijkstraBinaryHeap(
-                new Input(src, target, reweightedGraph)
+                new JGraphTInput(src, target, reweightedGraph)
         );
 
         // Step 5: Adjust final path cost to original weights

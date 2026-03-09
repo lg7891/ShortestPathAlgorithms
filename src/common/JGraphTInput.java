@@ -3,12 +3,12 @@ package common;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
-public class Input {
+public class JGraphTInput {
     int src;
     int target;
     Graph<Integer, DefaultWeightedEdge> graph;
 
-    public Input(int src, int target, Graph<Integer, DefaultWeightedEdge> graph) {
+    public JGraphTInput(int src, int target, Graph<Integer, DefaultWeightedEdge> graph) {
         this.src = src;
         this.target = target;
         this.graph = graph;

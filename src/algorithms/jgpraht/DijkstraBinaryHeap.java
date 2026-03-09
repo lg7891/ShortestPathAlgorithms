@@ -1,6 +1,6 @@
-package algorithms;
+package algorithms.jgpraht;
 
-import common.Input;
+import common.JGraphTInput;
 import common.Output;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -9,7 +9,7 @@ import java.util.*;
 
 public class DijkstraBinaryHeap {
 
-    public static Output dijkstraBinaryHeap(Input input) {
+    public static Output dijkstraBinaryHeap(JGraphTInput input) {
         int target = input.getTarget();
         int src = input.getSrc();
         Graph<Integer, DefaultWeightedEdge> graph = input.getGraph();
