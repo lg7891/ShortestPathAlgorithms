@@ -265,6 +265,85 @@ public class GraphHelper {
         return new CustomGraph(numOfNodes, edges, adjOffset, adjTarget, adjWeight);
     }
 
+    public CustomGraphInput generateSNAPCustomGraph(String filePath, int seed) {
+        Map<Integer, Integer> idMap = new HashMap<>();
+        int nextId = 0;
+
+        Set<Long> seenEdges = new HashSet<>();
+        List<int[]> edgeList = new ArrayList<>();
+
+        Random random = new Random(seed); // use seed for reproducibility
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("#") || line.isBlank()) continue;
+
+                String[] parts = line.split("\\s+");
+                int srcOriginal = Integer.parseInt(parts[0]);
+                int dstOriginal = Integer.parseInt(parts[1]);
+
+                if (srcOriginal == dstOriginal) continue;
+
+                if (!idMap.containsKey(srcOriginal)) idMap.put(srcOriginal, nextId++);
+                if (!idMap.containsKey(dstOriginal)) idMap.put(dstOriginal, nextId++);
+
+                int u = idMap.get(srcOriginal);
+                int v = idMap.get(dstOriginal);
+
+                int lo = Math.min(u, v);
+                int hi = Math.max(u, v);
+                long key = ((long) lo << 32) | hi;
+
+                if (seenEdges.add(key)) {
+                    int weight = random.nextInt(10) + 1;
+                    edgeList.add(new int[]{lo, hi, weight});
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+            return null;
+        }
+
+        int V = nextId;
+        int E = edgeList.size();
+
+        if (V < 2) {
+            throw new IllegalStateException("Graph must contain at least two vertices");
+        }
+
+        int[] degree = new int[V];
+        for (int[] edge : edgeList) {
+            degree[edge[0]]++;
+            degree[edge[1]]++;
+        }
+
+        int[] adjOffset = new int[V + 1];
+        for (int i = 0; i < V; i++) {
+            adjOffset[i + 1] = adjOffset[i] + degree[i];
+        }
+
+        int[] adjTarget = new int[2 * E];
+        int[] adjWeight = new int[2 * E];
+        int[] cursor = Arrays.copyOf(adjOffset, V);
+
+        for (int[] edge : edgeList) {
+            int u = edge[0], v = edge[1], w = edge[2];
+            adjTarget[cursor[u]] = v;  adjWeight[cursor[u]++] = w;
+            adjTarget[cursor[v]] = u;  adjWeight[cursor[v]++] = w;
+        }
+
+        CustomGraph graph = new CustomGraph(V, E, adjOffset, adjTarget, adjWeight);
+
+        int srcIndex = random.nextInt(V);
+        int dstIndex;
+        do {
+            dstIndex = random.nextInt(V);
+        } while (dstIndex == srcIndex);
+
+        return new CustomGraphInput(srcIndex, dstIndex, graph);
+    }
+
     public static int[] srcTargetGenerator(int numOfNodes, int seed) {
         Random random = new Random(seed);
         int src = random.nextInt(numOfNodes);

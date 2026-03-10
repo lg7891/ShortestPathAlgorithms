@@ -126,7 +126,7 @@ public class Main {
         } else {
             String filePath = readFilePath();
             System.out.println("Loading SNAP graph from: " + filePath);
-            throw new UnsupportedOperationException("SNAP loading not yet implemented for custom graph class.");
+            return graphHelper.generateSNAPCustomGraph(filePath, graphSource);
         }
     }
 
