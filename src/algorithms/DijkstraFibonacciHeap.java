@@ -1,7 +1,7 @@
-package algorithms.graph;
+package algorithms;
 
-import common.CustomGraph;
-import common.CustomGraphInput;
+import common.Graph;
+import common.Input;
 import common.Output;
 import org.jheaps.AddressableHeap;
 import org.jheaps.tree.FibonacciHeap;
@@ -14,12 +14,12 @@ import java.util.Map;
 
 public class DijkstraFibonacciHeap {
 
-    public Output dijkstraFibonacciHeap(CustomGraphInput input) {
+    public Output dijkstraFibonacciHeap(Input input) {
         int src = input.getSrc();
         int target = input.getTarget();
-        CustomGraph customGraph = input.getGraph();
+        Graph graph = input.getGraph();
 
-        int V = customGraph.numOfNodes;
+        int V = graph.numOfNodes;
 
         int[] dist = new int[V];
         Arrays.fill(dist, Integer.MAX_VALUE);
@@ -45,9 +45,9 @@ public class DijkstraFibonacciHeap {
             if (u == target)
                 break;
 
-            for (int i = customGraph.adjOffset[u]; i < customGraph.adjOffset[u + 1]; i++) {
-                int v = customGraph.adjTarget[i];
-                int weight = customGraph.adjWeight[i];
+            for (int i = graph.adjOffset[u]; i < graph.adjOffset[u + 1]; i++) {
+                int v = graph.adjTarget[i];
+                int weight = graph.adjWeight[i];
 
                 int newDist = dist[u] + weight;
 

@@ -1,14 +1,11 @@
 package common;
 
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultWeightedEdge;
-
-public class JGraphTInput {
+public class Input {
     int src;
-    int target;
-    Graph<Integer, DefaultWeightedEdge> graph;
+    int   target;
+    Graph graph;
 
-    public JGraphTInput(int src, int target, Graph<Integer, DefaultWeightedEdge> graph) {
+    public Input(int src, int target, Graph graph) {
         this.src = src;
         this.target = target;
         this.graph = graph;
@@ -30,11 +27,11 @@ public class JGraphTInput {
         this.target = target;
     }
 
-    public Graph<Integer, DefaultWeightedEdge> getGraph() {
+    public Graph getGraph() {
         return graph;
     }
 
-    public void setGraph(Graph<Integer, DefaultWeightedEdge> graph) {
+    public void setGraph(Graph graph) {
         this.graph = graph;
     }
 }

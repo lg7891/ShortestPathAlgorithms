@@ -1,7 +1,7 @@
-package algorithms.graph;
+package algorithms;
 
-import common.CustomGraph;
-import common.CustomGraphInput;
+import common.Graph;
+import common.Input;
 import common.Output;
 
 import java.util.ArrayList;
@@ -9,12 +9,12 @@ import java.util.Arrays;
 
 public class FloydWarshall {
 
-    public Output floydWarshall(CustomGraphInput input) {
+    public Output floydWarshall(Input input) {
         int src = input.getSrc();
         int target = input.getTarget();
-        CustomGraph customGraph = input.getGraph();
+        Graph graph = input.getGraph();
 
-        int V = customGraph.numOfNodes;
+        int V = graph.numOfNodes;
 
         int[][] dist = new int[V][V];
         int[][] next = new int[V][V];
@@ -29,9 +29,9 @@ public class FloydWarshall {
 
         // Build distance matrix from CSR adjacency arrays
         for (int u = 0; u < V; u++) {
-            for (int i = customGraph.adjOffset[u]; i < customGraph.adjOffset[u + 1]; i++) {
-                int v = customGraph.adjTarget[i];
-                int weight = customGraph.adjWeight[i];
+            for (int i = graph.adjOffset[u]; i < graph.adjOffset[u + 1]; i++) {
+                int v = graph.adjTarget[i];
+                int weight = graph.adjWeight[i];
                 dist[u][v] = weight;
                 next[u][v] = v;
             }

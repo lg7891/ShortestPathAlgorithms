@@ -1,7 +1,12 @@
+import algorithms.BellmanFord;
+import algorithms.DijkstraBinaryHeap;
+import algorithms.DijkstraFibonacciHeap;
+import algorithms.FloydWarshall;
+import algorithms.Johnson;
 import common.GraphHelper;
-import common.CustomGraphInput;
-import common.JGraphTInput;
+import common.Input;
 import common.Output;
+import common.OutputVerifier;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -16,32 +21,22 @@ public class Main {
 
         System.out.println("=== Shortest Path Algorithm Runner ===\n");
 
-        // Step 1: Choose graph implementation
-        System.out.println("Select graph implementation:");
-        System.out.println("  1. Custom Graph Class");
-        System.out.println("  2. JGraphT Library");
-        int graphImpl = readInt(1, 2);
-
-        // Step 2: Choose graph source
-        System.out.println("\nSelect graph source:");
+        // Step 1: Choose graph source
+        System.out.println("Select graph source:");
         System.out.println("  1. Artificial (generated)");
         System.out.println("  2. Real-life (SNAP dataset)");
         int graphSource = readInt(1, 2);
 
-        // Step 3: Choose algorithm (same prompt regardless of implementation)
+        // Step 2: Choose algorithm
         int algorithmChoice = readAlgorithmChoice();
 
-        if (graphImpl == 1) {
-            runCustomGraph(graphHelper, graphSource, algorithmChoice);
-        } else {
-            runJGraphT(graphHelper, graphSource, algorithmChoice);
-        }
+        runCustomGraph(graphHelper, graphSource, algorithmChoice);
 
         scanner.close();
     }
 
     // -------------------------------------------------------------------------
-    // Algorithm selection (shared)
+    // Algorithm selection
     // -------------------------------------------------------------------------
 
     private static int readAlgorithmChoice() {
@@ -65,45 +60,45 @@ public class Main {
     }
 
     // -------------------------------------------------------------------------
-    // Custom Graph Class
+    // Custom Graph Execution
     // -------------------------------------------------------------------------
 
     private static void runCustomGraph(GraphHelper graphHelper, int graphSource, int algorithmChoice) {
-        CustomGraphInput input = buildCustomInput(graphHelper, graphSource);
+        Input input = buildCustomInput(graphHelper, graphSource);
         Output output;
         Instant start, finish;
 
         switch (algorithmChoice) {
         case 1 -> {
-            algorithms.graph.DijkstraBinaryHeap dbh = new algorithms.graph.DijkstraBinaryHeap();
+            DijkstraBinaryHeap dbh = new DijkstraBinaryHeap();
             dbh.dijkstraBinaryHeap(input); // warmup
             start = Instant.now();
             output = dbh.dijkstraBinaryHeap(input);
             finish = Instant.now();
         }
         case 2 -> {
-            algorithms.graph.DijkstraFibonacciHeap dfh = new algorithms.graph.DijkstraFibonacciHeap();
+            DijkstraFibonacciHeap dfh = new DijkstraFibonacciHeap();
             dfh.dijkstraFibonacciHeap(input); // warmup
             start = Instant.now();
             output = dfh.dijkstraFibonacciHeap(input);
             finish = Instant.now();
         }
         case 3 -> {
-            algorithms.graph.BellmanFord bf = new algorithms.graph.BellmanFord();
+            BellmanFord bf = new BellmanFord();
             bf.bellmanFord(input); // warmup
             start = Instant.now();
             output = bf.bellmanFord(input);
             finish = Instant.now();
         }
         case 4 -> {
-            algorithms.graph.Johnson j = new algorithms.graph.Johnson();
+            Johnson j = new Johnson();
             j.johnson(input); // warmup
             start = Instant.now();
             output = j.johnson(input);
             finish = Instant.now();
         }
         default -> {
-            algorithms.graph.FloydWarshall fw = new algorithms.graph.FloydWarshall();
+            FloydWarshall fw = new FloydWarshall();
             fw.floydWarshall(input); // warmup
             start = Instant.now();
             output = fw.floydWarshall(input);
@@ -111,93 +106,41 @@ public class Main {
         }
         }
 
-        printResults(output, algorithmName(algorithmChoice), Duration.between(start, finish).toMillis());
-    }
+        long timeMs = Duration.between(start, finish).toMillis();
 
-    private static CustomGraphInput buildCustomInput(GraphHelper graphHelper, int graphSource) {
+        printResults(output, algorithmName(algorithmChoice), timeMs);
+
+        // Verify correctness
+        boolean isValid = OutputVerifier.verifyOutput(input.getGraph(), output);
+
+        System.out.println("\nVerification: " + (isValid ? "PASSED ✅" : "FAILED ❌"));    }
+
+    private static Input buildCustomInput(GraphHelper graphHelper, int graphSource) {
         if (graphSource == 1) {
             double[] params = readArtificialParams();
             int numOfNodes = (int) params[0];
             double density = params[1];
             int seed = (int) params[2];
-            System.out.printf("%nGenerating artificial graph: %d nodes, %.6f density, seed %d%n", numOfNodes, density, seed);
+
+            System.out.printf("%nGenerating artificial graph: %d nodes, %.2f%% density, seed %d%n",
+                    numOfNodes, density * 100, seed);
+
             int[] srcAndTarget = graphHelper.srcTargetGenerator(numOfNodes, seed);
-            return new CustomGraphInput(srcAndTarget[0], srcAndTarget[1], graphHelper.generateCustomGraph(numOfNodes, density, seed));
+
+            return new Input(
+                    srcAndTarget[0],
+                    srcAndTarget[1],
+                    graphHelper.generateGraph(numOfNodes, density, seed)
+            );
         } else {
             String filePath = readFilePath();
             System.out.println("Loading SNAP graph from: " + filePath);
-            return graphHelper.generateSNAPCustomGraph(filePath, graphSource);
+            return graphHelper.generateSNAPGraph(filePath, graphSource);
         }
     }
 
     // -------------------------------------------------------------------------
-    // JGraphT
-    // -------------------------------------------------------------------------
-
-    private static void runJGraphT(GraphHelper graphHelper, int graphSource, int algorithmChoice) {
-        JGraphTInput input = buildJGraphTInput(graphHelper, graphSource);
-        Output output;
-        Instant start, finish;
-
-        switch (algorithmChoice) {
-        case 1 -> {
-            algorithms.jgpraht.DijkstraBinaryHeap dbh = new algorithms.jgpraht.DijkstraBinaryHeap();
-            dbh.dijkstraBinaryHeap(input); // warmup
-            start = Instant.now();
-            output = dbh.dijkstraBinaryHeap(input);
-            finish = Instant.now();
-        }
-        case 2 -> {
-            algorithms.jgpraht.DijkstraFibonacciHeap dfh = new algorithms.jgpraht.DijkstraFibonacciHeap();
-            dfh.dijkstraFibonacciHeap(input); // warmup
-            start = Instant.now();
-            output = dfh.dijkstraFibonacciHeap(input);
-            finish = Instant.now();
-        }
-        case 3 -> {
-            algorithms.jgpraht.BellmanFord bf = new algorithms.jgpraht.BellmanFord();
-            bf.bellmanFord(input); // warmup
-            start = Instant.now();
-            output = bf.bellmanFord(input);
-            finish = Instant.now();
-        }
-        case 4 -> {
-            algorithms.jgpraht.Johnson j = new algorithms.jgpraht.Johnson();
-            j.johnson(input); // warmup
-            start = Instant.now();
-            output = j.johnson(input);
-            finish = Instant.now();
-        }
-        default -> {
-            algorithms.jgpraht.FloydWarshall fw = new algorithms.jgpraht.FloydWarshall();
-            fw.floydWarshall(input); // warmup
-            start = Instant.now();
-            output = fw.floydWarshall(input);
-            finish = Instant.now();
-        }
-        }
-
-        printResults(output, algorithmName(algorithmChoice), Duration.between(start, finish).toMillis());
-    }
-
-    private static JGraphTInput buildJGraphTInput(GraphHelper graphHelper, int graphSource) {
-        if (graphSource == 1) {
-            double[] params = readArtificialParams();
-            int numOfNodes = (int) params[0];
-            double density = params[1];
-            int seed = (int) params[2];
-            System.out.printf("%nGenerating artificial graph: %d nodes, %.4f density, seed %d%n", numOfNodes, density, seed);
-            int[] srcAndTarget = GraphHelper.srcTargetGenerator(numOfNodes, seed);
-            return new JGraphTInput(srcAndTarget[0], srcAndTarget[1], graphHelper.generateGraph(numOfNodes, density, seed));
-        } else {
-            String filePath = readFilePath();
-            System.out.println("Loading SNAP graph from: " + filePath);
-            return graphHelper.generateSNAPGraph(filePath, 1);
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Shared print
+    // Output
     // -------------------------------------------------------------------------
 
     private static void printResults(Output output, String name, long ms) {
@@ -214,10 +157,14 @@ public class Main {
     private static double[] readArtificialParams() {
         System.out.print("\nNumber of nodes: ");
         int nodes = readInt(1, Integer.MAX_VALUE);
-        System.out.print("Density (0.0 to 1.0): ");
-        double density = readDouble(0.0, 1.0);
+
+        System.out.print("Density (0 to 100 %): ");
+        double densityPercent = readDouble(0.0, 100.0);
+        double density = densityPercent / 100.0;
+
         System.out.print("Seed: ");
         int seed = readInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+
         return new double[]{nodes, density, seed};
     }
 
@@ -230,7 +177,9 @@ public class Main {
         System.out.println("  5. resources/road-networks/roadNet-PA.txt");
         System.out.println("  6. resources/autonomous-systems/as20000102.txt");
         System.out.println("  7. Enter custom path");
-        int choice = readInt(1, 5);
+
+        int choice = readInt(1, 7);
+
         return switch (choice) {
             case 1 -> "resources/social-networks/facebook_combined.txt";
             case 2 -> "resources/internet-p2p-networks/p2p-Gnutella04.txt";
@@ -238,7 +187,10 @@ public class Main {
             case 4 -> "resources/road-networks/roadNet-CA.txt";
             case 5 -> "resources/road-networks/roadNet-PA.txt";
             case 6 -> "resources/autonomous-systems/as20000102.txt";
-            default -> { System.out.print("Enter path: "); yield scanner.nextLine().trim(); }
+            default -> {
+                System.out.print("Enter path: ");
+                yield scanner.nextLine().trim();
+            }
         };
     }
 

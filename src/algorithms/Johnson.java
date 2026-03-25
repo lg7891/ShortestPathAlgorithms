@@ -1,7 +1,7 @@
-package algorithms.graph;
+package algorithms;
 
-import common.CustomGraph;
-import common.CustomGraphInput;
+import common.Graph;
+import common.Input;
 import common.Output;
 
 import java.util.ArrayList;
@@ -13,19 +13,19 @@ import java.util.PriorityQueue;
 
 public class Johnson {
 
-    public Output johnson(CustomGraphInput input) {
+    public Output johnson(Input input) {
         int src = input.getSrc();
         int target = input.getTarget();
-        CustomGraph customGraph = input.getGraph();
+        Graph graph = input.getGraph();
 
-        int V = customGraph.numOfNodes;
+        int V = graph.numOfNodes;
 
         // Step 1: Build edge list for Bellman-Ford
         List<int[]> edges = new ArrayList<>();
         for (int u = 0; u < V; u++) {
-            for (int i = customGraph.adjOffset[u]; i < customGraph.adjOffset[u + 1]; i++) {
-                int v = customGraph.adjTarget[i];
-                int weight = customGraph.adjWeight[i];
+            for (int i = graph.adjOffset[u]; i < graph.adjOffset[u + 1]; i++) {
+                int v = graph.adjTarget[i];
+                int weight = graph.adjWeight[i];
                 // Only add each edge once (CSR stores both directions already)
                 if (u < v) {
                     edges.add(new int[] { u, v, weight });
@@ -43,23 +43,23 @@ public class Johnson {
         }
 
         // Step 3: Build reweighted graph using CSR
-        int[] reweightedOffset = Arrays.copyOf(customGraph.adjOffset, customGraph.adjOffset.length);
-        int[] reweightedTarget = Arrays.copyOf(customGraph.adjTarget, customGraph.adjTarget.length);
-        int[] reweightedWeight = new int[customGraph.adjWeight.length];
+        int[] reweightedOffset = Arrays.copyOf(graph.adjOffset, graph.adjOffset.length);
+        int[] reweightedTarget = Arrays.copyOf(graph.adjTarget, graph.adjTarget.length);
+        int[] reweightedWeight = new int[graph.adjWeight.length];
 
         for (int u = 0; u < V; u++) {
-            for (int i = customGraph.adjOffset[u]; i < customGraph.adjOffset[u + 1]; i++) {
-                int v = customGraph.adjTarget[i];
-                int weight = customGraph.adjWeight[i];
+            for (int i = graph.adjOffset[u]; i < graph.adjOffset[u + 1]; i++) {
+                int v = graph.adjTarget[i];
+                int weight = graph.adjWeight[i];
                 reweightedWeight[i] = weight + h[u] - h[v];
             }
         }
 
-        CustomGraph reweightedCustomGraph = new CustomGraph(V, customGraph.numOfEdges, reweightedOffset, reweightedTarget, reweightedWeight);
+        Graph reweightedGraph = new Graph(V, graph.numOfEdges, reweightedOffset, reweightedTarget, reweightedWeight);
 
         // Step 4: Run Dijkstra on reweighted graph
         Output reweightedOutput = dijkstraBinaryHeap(
-                new CustomGraphInput(src, target, reweightedCustomGraph)
+                new Input(src, target, reweightedGraph)
         );
 
         // Step 5: Adjust final path cost back to original weights
@@ -106,13 +106,13 @@ public class Johnson {
         return Arrays.copyOf(dist, V);
     }
 
-    private static Output dijkstraBinaryHeap(CustomGraphInput input) {
+    private static Output dijkstraBinaryHeap(Input input) {
 
         int src = input.getSrc();
         int target = input.getTarget();
-        CustomGraph customGraph = input.getGraph();
+        Graph graph = input.getGraph();
 
-        int V = customGraph.numOfNodes;
+        int V = graph.numOfNodes;
 
         int[] dist = new int[V];
         Arrays.fill(dist, Integer.MAX_VALUE);
@@ -139,10 +139,10 @@ public class Johnson {
             if (u == target)
                 break;
 
-            for (int i = customGraph.adjOffset[u]; i < customGraph.adjOffset[u + 1]; i++) {
+            for (int i = graph.adjOffset[u]; i < graph.adjOffset[u + 1]; i++) {
 
-                int v = customGraph.adjTarget[i];
-                int weight = customGraph.adjWeight[i];
+                int v = graph.adjTarget[i];
+                int weight = graph.adjWeight[i];
 
                 if (visited[v])
                     continue;

@@ -1,7 +1,7 @@
-package algorithms.graph;
+package algorithms;
 
-import common.CustomGraph;
-import common.CustomGraphInput;
+import common.Graph;
+import common.Input;
 import common.Output;
 
 import java.util.ArrayList;
@@ -10,12 +10,12 @@ import java.util.Collections;
 
 public class BellmanFord {
 
-    public Output bellmanFord(CustomGraphInput input) {
+    public Output bellmanFord(Input input) {
         int src = input.getSrc();
         int target = input.getTarget();
-        CustomGraph customGraph = input.getGraph();
+        Graph graph = input.getGraph();
 
-        int V = customGraph.numOfNodes;
+        int V = graph.numOfNodes;
 
         int[] dist = new int[V];
         int[] prev = new int[V];
@@ -31,9 +31,9 @@ public class BellmanFord {
             for (int u = 0; u < V; u++) {
                 if (dist[u] == Integer.MAX_VALUE) continue;
 
-                for (int j = customGraph.adjOffset[u]; j < customGraph.adjOffset[u + 1]; j++) {
-                    int v = customGraph.adjTarget[j];
-                    int weight = customGraph.adjWeight[j];
+                for (int j = graph.adjOffset[u]; j < graph.adjOffset[u + 1]; j++) {
+                    int v = graph.adjTarget[j];
+                    int weight = graph.adjWeight[j];
 
                     if (dist[u] + weight < dist[v]) {
                         dist[v] = dist[u] + weight;
