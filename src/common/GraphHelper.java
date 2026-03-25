@@ -341,6 +341,8 @@ public class GraphHelper {
             dstIndex = random.nextInt(V);
         } while (dstIndex == srcIndex);
 
+        System.out.println("Number of nodes:  " + V + ", number of edges: " + E);
+
         return new CustomGraphInput(srcIndex, dstIndex, graph);
     }
 

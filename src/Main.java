@@ -120,7 +120,7 @@ public class Main {
             int numOfNodes = (int) params[0];
             double density = params[1];
             int seed = (int) params[2];
-            System.out.printf("%nGenerating artificial graph: %d nodes, %.4f density, seed %d%n", numOfNodes, density, seed);
+            System.out.printf("%nGenerating artificial graph: %d nodes, %.6f density, seed %d%n", numOfNodes, density, seed);
             int[] srcAndTarget = graphHelper.srcTargetGenerator(numOfNodes, seed);
             return new CustomGraphInput(srcAndTarget[0], srcAndTarget[1], graphHelper.generateCustomGraph(numOfNodes, density, seed));
         } else {
@@ -226,14 +226,18 @@ public class Main {
         System.out.println("  1. resources/social-networks/facebook_combined.txt");
         System.out.println("  2. resources/internet-p2p-networks/p2p-Gnutella04.txt");
         System.out.println("  3. resources/road-networks/roadNet-TX.txt");
-        System.out.println("  4. resources/autonomous-systems/as20000102.txt");
-        System.out.println("  5. Enter custom path");
+        System.out.println("  4. resources/road-networks/roadNet-CA.txt");
+        System.out.println("  5. resources/road-networks/roadNet-PA.txt");
+        System.out.println("  6. resources/autonomous-systems/as20000102.txt");
+        System.out.println("  7. Enter custom path");
         int choice = readInt(1, 5);
         return switch (choice) {
             case 1 -> "resources/social-networks/facebook_combined.txt";
             case 2 -> "resources/internet-p2p-networks/p2p-Gnutella04.txt";
             case 3 -> "resources/road-networks/roadNet-TX.txt";
-            case 4 -> "resources/autonomous-systems/as20000102.txt";
+            case 4 -> "resources/road-networks/roadNet-CA.txt";
+            case 5 -> "resources/road-networks/roadNet-PA.txt";
+            case 6 -> "resources/autonomous-systems/as20000102.txt";
             default -> { System.out.print("Enter path: "); yield scanner.nextLine().trim(); }
         };
     }
